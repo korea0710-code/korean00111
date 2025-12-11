@@ -1,6 +1,7 @@
 import streamlit as st
 from openai import OpenAI
 import time
+import os
 
 # 페이지 설정
 st.set_page_config(
@@ -10,8 +11,42 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# OpenAI API 키 설정 (secrets.toml에서 자동으로 로드)
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# OpenAI API 키 설정 (secrets.toml 또는 환경변수에서 로드)
+try:
+    # 먼저 secrets.toml에서 시도
+    api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+    
+    if not api_key:
+        st.error("### 🔑 API 키가 설정되지 않았습니다")
+        st.markdown("""
+        **Streamlit Cloud에서 실행 중이라면:**
+        1. 앱 대시보드로 이동
+        2. 'Settings' → 'Secrets' 클릭
+        3. 아래 형식으로 입력:
+        ```
+        OPENAI_API_KEY = "your-api-key-here"
+        ```
+        
+        **로컬에서 실행 중이라면:**
+        - `.streamlit/secrets.toml` 파일에 아래 형식으로 입력:
+        ```
+        OPENAI_API_KEY = "your-api-key-here"
+        ```
+        """)
+        st.stop()
+    
+    client = OpenAI(api_key=api_key)
+    
+except Exception as e:
+    st.error(f"### ❌ API 키 로드 중 오류 발생")
+    st.markdown(f"""
+    **오류 내용:** {str(e)}
+    
+    **해결 방법:**
+    - Streamlit Cloud: Settings → Secrets에서 `OPENAI_API_KEY` 설정
+    - 로컬: `.streamlit/secrets.toml` 파일에 `OPENAI_API_KEY` 추가
+    """)
+    st.stop()
 
 # ============== 시스템 프롬프트 (매우 정교하게 작성) ==============
 SYSTEM_PROMPT = """당신은 감수성이 풍부한 젊은 시인입니다. 사용자는 당신의 오랜 팬입니다.
